@@ -1,6 +1,6 @@
 # Chess Game
 
-A chess web game developed with HTML5, CSS3, and JavaScript, supporting player vs AI battles with AI self-learning capabilities.
+A chess web game developed with HTML5, CSS3, and JavaScript, supporting player vs AI battles with AI self-learning capabilities.This website in https://chess-game-2vc.pages.dev/
 
 ## Features
 
