@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>下载 - 支持AI自我学习的国际象棋游戏</title>
+  <!-- 网站图标 -->
+  <link rel="icon" href="icon.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="icon.jpg">
+  <!-- 基础样式 - 确保在JavaScript禁用时也能正常工作 -->
+  <style>
+    /* 重置样式 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* 基础页面样式 */
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #F5F5DC;
+      color: #3E2723;
+    }
+    
+    /* JavaScript禁用时的页面样式 */
+    noscript {
+      display: block;
+    }
+    
+    /* 默认隐藏页面内容，当JavaScript启用时会显示 */
+    #page-content {
+      display: none;
+    }
+  </style>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#8B4513',
+            secondary: '#D2B48C',
+            accent: '#CD853F',
+            light: '#F5F5DC',
+            dark: '#3E2723'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .download-card {
+        transition: all 0.3s ease;
+      }
+      
+      .download-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      }
+      
+      /* 隐藏滚动条 */
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-light min-h-screen font-sans text-dark">
+  <!-- JavaScript被禁用时的提示 -->
+  <noscript>
+    <div style="position: fixed; inset: 0; background: #3E2723; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: white; border-radius: 10px; padding: 40px; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <div style="font-size: 60px; color: #CD853F; margin-bottom: 20px;">⚠️</div>
+        <h1 style="font-size: 24px; font-weight: bold; color: #8B4513; margin-bottom: 15px;">JavaScript被禁用</h1>
+        <p style="font-size: 16px; color: #666; margin-bottom: 30px; line-height: 1.6;">
+          本国际象棋游戏需要启用JavaScript才能正常运行。
+          请在浏览器设置中启用JavaScript，然后刷新页面。
+        </p>
+        <button style="background: #8B4513; color: white; border: none; border-radius: 6px; padding: 12px 30px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background-color 0.3s;">
+          刷新页面
+        </button>
+      </div>
+    </div>
+  </noscript>
+  
+  <!-- 页面内容包装器 - 默认隐藏，JavaScript启用时显示 -->
+  <div id="page-content">
+    <!-- 顶部导航 -->
+    <nav class="bg-primary text-white shadow-md sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-chess-board text-2xl"></i>
+        <h1 class="text-xl font-bold">国际象棋</h1>
+      </div>
+      
+      <!-- 桌面端菜单 -->
+      <div class="hidden lg:flex space-x-4 items-center">
+        <a href="index.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">首页</a>
+        
+        <a href="records.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+        <a href="profile.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">个人信息</a>
+        <a href="download.html" class="px-3 py-2 rounded hover:bg-accent transition-colors active">下载</a>
+        <a href="rules.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">规则</a>
+        <a href="support.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">支持</a>
+        <div id="user-auth" class="flex items-center space-x-2">
+          <a href="auth.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">登录</a>
+        </div>
+        <div id="user-profile" class="flex items-center space-x-2 hidden">
+          <span id="username-display" class="px-3 py-2 rounded bg-accent">用户名</span>
+          <button id="logout-button" class="px-3 py-2 rounded hover:bg-accent transition-colors">
+            <i class="fa fa-sign-out"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 移动端菜单按钮 -->
+      <button id="mobile-menu-button" class="lg:hidden px-3 py-2 rounded hover:bg-accent transition-colors">
+        <i class="fa fa-bars text-xl"></i>
+      </button>
+    </div>
+    
+    <!-- 移动端菜单 -->
+    <div id="mobile-menu" class="hidden lg:hidden bg-primary bg-opacity-95 backdrop-blur-sm">
+      <div class="container mx-auto px-4 py-2 space-y-1">
+        <a href="index.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">首页</a>
+        
+        <a href="records.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+        <a href="profile.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">个人信息</a>
+        <a href="download.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors active">下载</a>
+        <a href="rules.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">规则</a>
+        <a href="support.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">支持</a>
+        
+        <div id="mobile-user-auth" class="block px-3 py-2 rounded hover:bg-accent transition-colors">
+          <a href="auth.html" class="w-full">登录</a>
+        </div>
+        <div id="mobile-user-profile" class="flex items-center justify-between space-x-2 hidden px-3 py-2 rounded bg-accent">
+          <span id="mobile-username-display">用户名</span>
+          <button id="mobile-logout-button" class="px-3 py-1 rounded hover:bg-primary transition-colors">
+            <i class="fa fa-sign-out"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold text-center mb-8 text-primary">下载国际象棋游戏</h1>
+      
+      <!-- 下载介绍 -->
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-4 text-primary">支持AI自我学习的国际象棋游戏</h2>
+        <p class="mb-4">我们的国际象棋游戏采用先进的AI技术，具备自我学习能力，能够根据您的游戏风格不断进化，为您提供更具挑战性的游戏体验。</p>
+        
+        <!-- 功能特点 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="download-card bg-light p-4 rounded-lg border border-secondary">
+            <div class="flex items-center mb-2">
+              <i class="fa fa-cogs text-2xl text-primary mr-3"></i>
+              <h3 class="text-xl font-semibold">AI自我学习</h3>
+            </div>
+            <p>游戏内置的AI系统能够通过与您的对局不断学习和改进，提供越来越具有挑战性的对手。</p>
+          </div>
+          
+          <div class="download-card bg-light p-4 rounded-lg border border-secondary">
+            <div class="flex items-center mb-2">
+              <i class="fa fa-trophy text-2xl text-primary mr-3"></i>
+              <h3 class="text-xl font-semibold">多种难度级别</h3>
+            </div>
+            <p>从简单到大师，我们提供多种难度级别，适合不同水平的玩家。</p>
+          </div>
+          
+          <div class="download-card bg-light p-4 rounded-lg border border-secondary">
+            <div class="flex items-center mb-2">
+              <i class="fa fa-history text-2xl text-primary mr-3"></i>
+              <h3 class="text-xl font-semibold">完整游戏记录</h3>
+            </div>
+            <p>自动保存您的游戏记录，支持查看历史对局和分析。</p>
+          </div>
+          
+          <div class="download-card bg-light p-4 rounded-lg border border-secondary">
+            <div class="flex items-center mb-2">
+              <i class="fa fa-user-circle text-2xl text-primary mr-3"></i>
+              <h3 class="text-xl font-semibold">个人资料管理</h3>
+            </div>
+            <p>创建您的个人资料，记录您的游戏成就和统计数据。</p>
+          </div>
+        </div>
+        
+        <!-- 下载按钮 -->
+        <div class="text-center">
+          <button id="download-button" class="inline-flex items-center justify-center bg-primary hover:bg-accent text-white px-8 py-4 rounded-lg shadow-lg transition-all transform hover:scale-105 text-xl font-bold">
+            <i class="fa fa-download mr-3"></i>
+            下载安装程序
+          </button>
+          <p class="mt-4 text-sm text-gray-600">文件大小：约70MB | 版本：1.0.0 | 支持Windows 7 64位及以上版本</p>
+        </div>
+        
+        <script>
+          // 处理下载按钮点击事件
+          document.getElementById('download-button').addEventListener('click', function() {
+            // 创建隐藏的a标签来触发下载
+            const link = document.createElement('a');
+            link.href = 'https://yanxiaofeng.kesug.com/ChessInstaller.zip';
+            link.download = 'ChessInstaller.zip';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            // 模拟点击触发下载
+            link.click();
+            
+            // 移除a标签，避免内存占用
+            document.body.removeChild(link);
+          });
+        </script>
+      </div>
+      
+      <!-- 安装说明 -->
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-4 text-primary">安装说明</h2>
+        <ol class="list-decimal pl-5 space-y-3">
+          <li>点击上方的"下载安装程序"按钮，下载ChessInstaller.zip文件。</li>
+          <li>找到下载的文件，右键选择"全部解压缩"。</li>
+          <li>解压缩后，您将获得一个名为"ChessInstaller"的文件夹。</li>
+          <li>双击"ChessInstaller"文件夹中的"ChessInstaller.exe"文件，运行安装程序。</li>
+          <li>按照安装向导的提示完成安装。</li>
+          <li>安装完成后，在桌面或开始菜单中找到"Chess"图标，双击启动游戏。</li>
+          <li>运行时，您可以直接开始游戏。</li>
+        </ol>
+      </div>
+      
+      <!-- 系统要求 -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-4 text-primary">系统要求</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-xl font-semibold mb-2">最低配置</h3>
+            <ul class="list-disc pl-5 space-y-2">
+              <li>操作系统：Windows 7 64位</li>
+              <li>内存：4GB RAM</li>
+              <li>存储空间：100MB 可用空间</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">推荐配置</h3>
+            <ul class="list-disc pl-5 space-y-2">
+              <li>操作系统：Windows 10 64位</li>
+              <li>内存：8GB RAM</li>
+              <li>存储空间：200MB 可用空间</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 底部信息 -->
+  <footer class="bg-primary text-white py-4 mt-8">
+    <div class="container mx-auto px-4 text-center">
+      <p>© 2026 国际象棋游戏 | 支持AI自我学习的国际象棋网页应用</p>
+    </div>
+  </footer>
+
+  <!-- 引入JavaScript文件 -->
+  <script>
+    // 当JavaScript启用时，显示页面内容
+    document.addEventListener('DOMContentLoaded', function() {
+      const pageContent = document.getElementById('page-content');
+      if (pageContent) {
+        pageContent.style.display = 'block';
+      }
+    });
+  </script>
+  <script src="js/userSystem.js"></script>
+  <script>
+    // 处理用户登录状态
+    document.addEventListener('DOMContentLoaded', async function() {
+      const userSystem = new UserSystem();
+      
+      await userSystem.initDB();
+       
+      
+      // 确保用户状态已经加载
+      await userSystem.loadCurrentUserFromStorage();
+      
+      console.log('下载页 - 当前用户:', userSystem.getCurrentUser());
+      console.log('下载页 - 是否登录:', userSystem.isLoggedIn());
+      
+      // 检查用户登录状态
+      if (userSystem.isLoggedIn()) {
+        const user = userSystem.getCurrentUser();
+        console.log('下载页 - 用户已登录:', user.username);
+        
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.add('hidden');
+        document.getElementById('user-profile').classList.remove('hidden');
+        document.getElementById('username-display').textContent = user.username;
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.add('hidden');
+        document.getElementById('mobile-user-profile').classList.remove('hidden');
+        document.getElementById('mobile-username-display').textContent = user.username;
+      } else {
+        console.log('下载页 - 用户未登录');
+        
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.remove('hidden');
+        document.getElementById('user-profile').classList.add('hidden');
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.remove('hidden');
+        document.getElementById('mobile-user-profile').classList.add('hidden');
+      }
+      
+      // 桌面端登出按钮点击事件
+      document.getElementById('logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+      
+      // 移动端登出按钮点击事件
+      document.getElementById('mobile-logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+      
+      // 移动端菜单按钮点击事件
+      document.getElementById('mobile-menu-button').addEventListener('click', function() {
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenu.classList.toggle('hidden');
+      });
+    });
+  </script>
+  </div>
+</body>
+</html>

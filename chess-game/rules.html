@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国际象棋规则 - 支持AI自我学习的国际象棋游戏</title>
+  <!-- 网站图标 -->
+  <link rel="icon" href="icon.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="icon.jpg">
+  <!-- 基础样式 - 确保在JavaScript禁用时也能正常工作 -->
+  <style>
+    /* 重置样式 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* 基础页面样式 */
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #F5F5DC;
+      color: #3E2723;
+    }
+    
+    /* JavaScript禁用时的页面样式 */
+    noscript {
+      display: block;
+    }
+    
+    /* 默认隐藏页面内容，当JavaScript启用时会显示 */
+    #page-content {
+      display: none;
+    }
+  </style>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#8B4513',
+            secondary: '#D2B48C',
+            accent: '#CD853F',
+            light: '#F5F5DC',
+            dark: '#3E2723'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .chess-piece-icon {
+        width: 40px;
+        height: 40px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      
+      .rule-section {
+        scroll-margin-top: 80px;
+      }
+      
+      .tab-active {
+        color: theme('colors.primary');
+        border-bottom: 2px solid theme('colors.primary');
+      }
+    }
+  </style>
+</head>
+<body class="bg-light min-h-screen font-sans text-dark">
+  <!-- JavaScript被禁用时的提示 -->
+  <noscript>
+    <div style="position: fixed; inset: 0; background: #3E2723; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: white; border-radius: 10px; padding: 40px; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <div style="font-size: 60px; color: #CD853F; margin-bottom: 20px;">⚠️</div>
+        <h1 style="font-size: 24px; font-weight: bold; color: #8B4513; margin-bottom: 15px;">JavaScript被禁用</h1>
+        <p style="font-size: 16px; color: #666; margin-bottom: 30px; line-height: 1.6;">
+          本国际象棋游戏需要启用JavaScript才能正常运行。
+          请在浏览器设置中启用JavaScript，然后刷新页面。
+        </p>
+        <button style="background: #8B4513; color: white; border: none; border-radius: 6px; padding: 12px 30px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background-color 0.3s;">
+          刷新页面
+        </button>
+      </div>
+    </div>
+  </noscript>
+  
+  <!-- 页面内容包装器 - 默认隐藏，JavaScript启用时显示 -->
+  <div id="page-content">
+    <!-- 顶部导航 -->
+    <nav class="bg-primary text-white shadow-md sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-chess-board text-2xl"></i>
+        <h1 class="text-xl font-bold">国际象棋</h1>
+      </div>
+      
+      <!-- 移动端汉堡菜单按钮 -->
+      <button id="mobile-menu-button" class="lg:hidden text-white focus:outline-none">
+        <i class="fa fa-bars text-2xl"></i>
+      </button>
+      
+      <!-- 桌面端导航菜单 -->
+      <div id="nav-menu" class="hidden lg:flex space-x-4 items-center">
+        <a href="index.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">首页</a>
+        <a href="records.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+        <a href="profile.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">个人信息</a>
+        <a href="download.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">下载</a>
+        <a href="rules.html" class="px-3 py-2 rounded hover:bg-accent transition-colors active">规则</a>
+        <a href="support.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">支持</a>
+        <div id="user-auth" class="flex items-center space-x-2">
+          <a href="auth.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">登录</a>
+        </div>
+        <div id="user-profile" class="flex items-center space-x-2 hidden">
+          <span id="username-display" class="px-3 py-2 rounded bg-accent">用户名</span>
+          <button id="logout-button" class="px-3 py-2 rounded hover:bg-accent transition-colors">
+            <i class="fa fa-sign-out"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 移动端导航菜单 -->
+    <div id="mobile-menu" class="hidden lg:hidden bg-primary/95 backdrop-blur-sm">
+      <div class="container mx-auto px-4 py-3 space-y-2">
+        <a href="index.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">首页</a>
+        <a href="records.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+        <a href="profile.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">个人信息</a>
+        <a href="download.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">下载</a>
+        <a href="rules.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors active">规则</a>
+        <a href="support.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">支持</a>
+        <div id="mobile-user-auth" class="flex items-center space-x-2 py-2">
+          <a href="auth.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">登录</a>
+        </div>
+        <div id="mobile-user-profile" class="flex flex-col space-y-2 py-2 hidden">
+          <span id="mobile-username-display" class="block px-3 py-2 rounded bg-accent">用户名</span>
+          <button id="mobile-logout-button" class="block px-3 py-2 rounded hover:bg-accent transition-colors text-left">
+            <i class="fa fa-sign-out mr-2"></i> 退出登录
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold text-center mb-8 text-primary">国际象棋规则</h1>
+      
+      <!-- 规则选项卡 -->
+      <div class="flex border-b border-gray-300 mb-6 overflow-x-auto scrollbar-hide">
+        <button class="rule-tab tab-active px-6 py-3 font-medium text-lg whitespace-nowrap" data-target="basic-rules">基本规则</button>
+        <button class="rule-tab px-6 py-3 font-medium text-lg whitespace-nowrap" data-target="piece-moves">棋子走法</button>
+        <button class="rule-tab px-6 py-3 font-medium text-lg whitespace-nowrap" data-target="special-rules">特殊规则</button>
+        <button class="rule-tab px-6 py-3 font-medium text-lg whitespace-nowrap" data-target="ai-learning">AI学习机制</button>
+      </div>
+      
+      <!-- 基本规则 -->
+      <section id="basic-rules" class="rule-section bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-4 text-primary">基本规则</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <h3 class="text-xl font-semibold mb-2">游戏目标</h3>
+            <p>国际象棋的目标是将对方的国王将死（Checkmate），即攻击对方的国王，使其无法逃脱被吃掉的命运。</p>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">棋盘与初始布局</h3>
+            <p>国际象棋棋盘为8×8的方格，由深浅两种颜色交替组成。白方位于浅色格子的右下角。</p>
+            <div class="my-4 bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-8 gap-1">
+                <!-- 黑方后排 -->
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♜</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♞</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♝</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♛</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♚</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♝</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♞</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♜</div>
+                
+                <!-- 黑方兵 -->
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♟</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♟</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♟</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♟</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♟</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♟</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♟</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♟</div>
+                
+                <!-- 空白区域 -->
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center"></div>
+                
+                <!-- 白方兵 -->
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♙</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♙</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♙</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♙</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♙</div>
+                
+                <!-- 白方后排 -->
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♖</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♘</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♗</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♕</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♔</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♗</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♘</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♖</div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">游戏流程</h3>
+            <p>白方先行，双方轮流移动棋子。每次只能移动一个棋子，且必须按照规则移动。吃掉对方的棋子后，该棋子从棋盘上移除。</p>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">胜负判定</h3>
+            <ul class="list-disc pl-5 space-y-2">
+              <li><strong>将死（Checkmate）</strong>：当一方的国王被对方攻击（将军），且无法通过移动国王、吃掉攻击的棋子或阻挡攻击来解除将军状态时，该方被判负。</li>
+              <li><strong>困毙（Stalemate）</strong>：当一方轮到行棋时，国王未被将军，但该方没有合法的移动可走，此时判为和棋。</li>
+              <li><strong>和棋（Draw）</strong>：除困毙外，和棋还包括以下情况：
+                <ul class="list-circle pl-5 mt-1">
+                  <li>双方同意和棋</li>
+                  <li>长将（一方连续不断地将军，但无法将死对方）</li>
+                  <li>无子可胜（如双方只剩国王，或一方只剩国王，另一方只剩国王和主教/骑士）</li>
+                  <li>五十步规则（连续50步没有吃子或移动兵）</li>
+                  <li>三次重复局面</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 棋子走法 -->
+      <section id="piece-moves" class="rule-section bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
+        <h2 class="text-2xl font-bold mb-4 text-primary">棋子走法</h2>
+        
+        <div class="space-y-6">
+          <!-- 王 -->
+          <div class="border-b pb-4">
+            <div class="flex items-center mb-2">
+              <div class="chess-piece-icon mr-3" style="background-image: url('https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/8152d9ee5cbc4b06b22ad93527154b43~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202601271239091FB0D8EE91DF3D16424F&rrcfp=f06b921b&x-expires=1772080784&x-signature=037zQEbeg3CyKMJWACZ2RX9jEqo%3D'); background-position: 0 0;"></div>
+              <h3 class="text-xl font-semibold">王（King）</h3>
+            </div>
+            <p class="mb-2">王可以向任意方向（横、竖、斜）移动一格，但不能走到被对方棋子攻击的位置。</p>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-5 gap-1">
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♚</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+              </div>
+              <p class="text-center text-sm mt-2">王的移动范围（×表示可移动到的位置）</p>
+            </div>
+          </div>
+          
+          <!-- 后 -->
+          <div class="border-b pb-4">
+            <div class="flex items-center mb-2">
+              <div class="chess-piece-icon mr-3" style="background-image: url('https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/8152d9ee5cbc4b06b22ad93527154b43~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202601271239091FB0D8EE91DF3D16424F&rrcfp=f06b921b&x-expires=1772080784&x-signature=037zQEbeg3CyKMJWACZ2RX9jEqo%3D'); background-position: 33.33% 0;"></div>
+              <h3 class="text-xl font-semibold">后（Queen）</h3>
+            </div>
+            <p class="mb-2">后可以向任意方向（横、竖、斜）移动任意数量的格子，但不能越过其他棋子。</p>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-8 gap-1">
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♕</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+              </div>
+              <p class="text-center text-sm mt-2">后的移动范围（×表示可移动到的位置）</p>
+            </div>
+          </div>
+          
+          <!-- 车 -->
+          <div class="border-b pb-4">
+            <div class="flex items-center mb-2">
+              <div class="chess-piece-icon mr-3" style="background-image: url('https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/8152d9ee5cbc4b06b22ad93527154b43~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202601271239091FB0D8EE91DF3D16424F&rrcfp=f06b921b&x-expires=1772080784&x-signature=037zQEbeg3CyKMJWACZ2RX9jEqo%3D'); background-position: 66.66% 0;"></div>
+              <h3 class="text-xl font-semibold">车（Rook）</h3>
+            </div>
+            <p class="mb-2">车可以横向或纵向移动任意数量的格子，但不能越过其他棋子。</p>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-8 gap-1">
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♖</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+              </div>
+              <p class="text-center text-sm mt-2">车的移动范围（×表示可移动到的位置）</p>
+            </div>
+          </div>
+          
+          <!-- 象 -->
+          <div class="border-b pb-4">
+            <div class="flex items-center mb-2">
+              <div class="chess-piece-icon mr-3" style="background-image: url('https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/8152d9ee5cbc4b06b22ad93527154b43~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202601271239091FB0D8EE91DF3D16424F&rrcfp=f06b921b&x-expires=1772080784&x-signature=037zQEbeg3CyKMJWACZ2RX9jEqo%3D'); background-position: 0 33.33%;"></div>
+              <h3 class="text-xl font-semibold">象（Bishop）</h3>
+            </div>
+            <p class="mb-2">象可以斜向移动任意数量的格子，但不能越过其他棋子。</p>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-8 gap-1">
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♗</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+              </div>
+              <p class="text-center text-sm mt-2">象的移动范围（×表示可移动到的位置）</p>
+            </div>
+          </div>
+          
+          <!-- 马 -->
+          <div class="border-b pb-4">
+            <div class="flex items-center mb-2">
+              <div class="chess-piece-icon mr-3" style="background-image: url('https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/8152d9ee5cbc4b06b22ad93527154b43~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202601271239091FB0D8EE91DF3D16424F&rrcfp=f06b921b&x-expires=1772080784&x-signature=037zQEbeg3CyKMJWACZ2RX9jEqo%3D'); background-position: 33.33% 33.33%;"></div>
+              <h3 class="text-xl font-semibold">马（Knight）</h3>
+            </div>
+            <p class="mb-2">马的移动方式是"日"字形：先横向或纵向移动两格，然后再横向或纵向移动一格，或者先横向或纵向移动一格，然后再横向或纵向移动两格。马可以越过其他棋子。</p>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-5 gap-1">
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♘</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+              </div>
+              <p class="text-center text-sm mt-2">马的移动范围（×表示可移动到的位置）</p>
+            </div>
+          </div>
+          
+          <!-- 兵 -->
+          <div>
+            <div class="flex items-center mb-2">
+              <div class="chess-piece-icon mr-3" style="background-image: url('https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/8152d9ee5cbc4b06b22ad93527154b43~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202601271239091FB0D8EE91DF3D16424F&rrcfp=f06b921b&x-expires=1772080784&x-signature=037zQEbeg3CyKMJWACZ2RX9jEqo%3D'); background-position: 66.66% 33.33%;"></div>
+              <h3 class="text-xl font-semibold">兵（Pawn）</h3>
+            </div>
+            <p class="mb-2">兵的移动规则较为特殊：</p>
+            <ul class="list-disc pl-5 space-y-1 mb-2">
+              <li>兵平时只能向前移动一格，但在初始位置可以选择向前移动一格或两格。</li>
+              <li>兵不能向后移动。</li>
+              <li>兵吃子的方式与移动方式不同：兵只能斜着向前一格吃子。</li>
+              <li>当兵到达对方底线时，必须升变为其他棋子（通常是后）。</li>
+            </ul>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-5 gap-1">
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">×</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+              </div>
+              <p class="text-center text-sm mt-2">兵的移动范围（×表示可移动到的位置）</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 特殊规则 -->
+      <section id="special-rules" class="rule-section bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
+        <h2 class="text-2xl font-bold mb-4 text-primary">特殊规则</h2>
+        
+        <div class="space-y-6">
+          <!-- 王车易位 -->
+          <div class="border-b pb-4">
+            <h3 class="text-xl font-semibold mb-2">王车易位（Castling）</h3>
+            <p class="mb-2">王车易位是一种特殊的走法，允许国王和车同时移动，具体规则如下：</p>
+            <ul class="list-disc pl-5 space-y-1 mb-2">
+              <li>王和参与易位的车都必须从未移动过。</li>
+              <li>王和车之间不能有其他棋子。</li>
+              <li>王不能处于被将军的状态。</li>
+              <li>王不能经过被攻击的格子。</li>
+              <li>王不能易位到被攻击的格子。</li>
+            </ul>
+            <p class="mb-2">王车易位有两种形式：</p>
+            <ul class="list-disc pl-5 space-y-1 mb-2">
+              <li><strong>短易位（王翼易位）</strong>：王向王翼方向移动两格，然后车越过王移动到王的另一侧。</li>
+              <li><strong>长易位（后翼易位）</strong>：王向后翼方向移动三格，然后车越过王移动到王的另一侧。</li>
+            </ul>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-8 gap-1">
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♜</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♞</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♝</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♛</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♚</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♝</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♞</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♜</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♟</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♟</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♟</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♟</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♟</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♟</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♟</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♟</div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♙</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♙</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♙</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♙</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♙</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♖</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♘</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♗</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♕</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♔</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♗</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♘</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♖</div>
+              </div>
+              <p class="text-center text-sm mt-2">初始布局中的王车易位可能性</p>
+            </div>
+          </div>
+          
+          <!-- 吃过路兵 -->
+          <div class="border-b pb-4">
+            <h3 class="text-xl font-semibold mb-2">吃过路兵（En Passant）</h3>
+            <p class="mb-2">吃过路兵是兵的一种特殊吃子方式：</p>
+            <ul class="list-disc pl-5 space-y-1 mb-2">
+              <li>当一方的兵从初始位置向前移动两格，而对方的兵正好位于其相邻的格子时，对方可以选择在下一步棋中斜向移动一格，吃掉这个兵，就好像它只移动了一格一样。</li>
+              <li>吃过路兵必须在对方兵移动两格后的下一步立即执行，否则就失去了这个机会。</li>
+            </ul>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-5 gap-1">
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white">♟</div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark">×</div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-8 h-8 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-8 h-8 bg-dark flex items-center justify-center text-white"></div>
+              </div>
+              <p class="text-center text-sm mt-2">吃过路兵示例（×表示黑方兵可以吃过路兵的位置）</p>
+            </div>
+          </div>
+          
+          <!-- 兵的升变 -->
+          <div>
+            <h3 class="text-xl font-semibold mb-2">兵的升变（Promotion）</h3>
+            <p class="mb-2">当兵到达对方的底线（即距离初始位置最远的一行）时，必须将其升变为其他棋子。规则如下：</p>
+            <ul class="list-disc pl-5 space-y-1 mb-2">
+              <li>兵可以升变为后、车、象或马中的任意一种，但不能保持为兵，也不能升变为王。</li>
+              <li>虽然规则允许升变为任何棋子，但通常都会选择升变为后，因为后是最强大的棋子。</li>
+              <li>升变通常在同一回合内完成，即兵移动到对方底线后立即升变。</li>
+            </ul>
+            <div class="bg-secondary rounded-lg p-4 inline-block">
+              <div class="grid grid-cols-8 gap-1">
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♜</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♞</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♝</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♛</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♚</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♝</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♞</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♜</div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♙</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white"></div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark"></div>
+                
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♖</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♘</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♗</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♕</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♔</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♗</div>
+                <div class="w-6 h-6 bg-light flex items-center justify-center text-dark">♘</div>
+                <div class="w-6 h-6 bg-dark flex items-center justify-center text-white">♖</div>
+              </div>
+              <p class="text-center text-sm mt-2">兵的升变示例（白方兵即将到达黑方底线）</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- AI学习机制 -->
+      <section id="ai-learning" class="rule-section bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
+        <h2 class="text-2xl font-bold mb-4 text-primary">AI学习机制</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <h3 class="text-xl font-semibold mb-2">AI学习原理</h3>
+            <p>本游戏中的AI采用了基于经验学习的机制，通过记录和分析每局对战的数据来优化自身的走棋策略。AI学习机制主要包括以下几个方面：</p>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">数据收集</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>记录每局对战的完整走棋序列</li>
+              <li>记录每局对战的胜负结果</li>
+              <li>记录关键局面下的走法选择</li>
+              <li>统计各类走法的成功率</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">学习优化</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>走法评估</strong>：AI会根据历史数据评估每种走法的优劣，优先选择胜率高的走法。</li>
+              <li><strong>模式识别</strong>：AI会识别常见的棋局模式和战术，学习应对策略。</li>
+              <li><strong>错误避免</strong>：AI会记录导致失败的走法序列，避免在类似局面下重复同样的错误。</li>
+              <li><strong>适应性调整</strong>：AI会根据对手的风格调整自己的策略，例如面对攻击性强的对手时加强防守。</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">学习数据存储</h3>
+            <p>AI的学习数据通过浏览器的localStorage功能存储在本地，包括：</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>局面评估数据：记录不同局面下各走法的评分</li>
+              <li>走法统计：记录各类走法的使用频率和成功率</li>
+              <li>战术模式：记录已识别的战术模式和应对策略</li>
+              <li>学习进度：记录AI的整体学习进度和水平提升</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">学习模式控制</h3>
+            <p>玩家可以通过界面上的"学习模式"开关控制AI是否进行学习：</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>学习模式开启</strong>：AI会在对局中不断学习和优化策略</li>
+              <li><strong>学习模式关闭</strong>：AI将使用已有的策略进行对弈，但不会更新学习数据</li>
+            </ul>
+            <p class="mt-2">学习进度条显示了AI当前的学习水平，随着对战次数的增加，AI的棋力会逐渐提升。</p>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-2">AI难度级别</h3>
+            <p>游戏提供了三个难度级别，AI在不同级别下的表现如下：</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>简单</strong>：AI主要进行随机合理走棋，学习效果有限，适合初学者。</li>
+              <li><strong>中等</strong>：AI会应用基础策略分析，如保护王、吃子优先、控制中心等，并能从对战中学习。</li>
+              <li><strong>困难</strong>：AI具备更深入的策略分析能力，会考虑更多步的走法，并能快速从对战中学习和调整策略。</li>
+            </ul>
+          </div>
+          
+          <div class="bg-light p-4 rounded-lg border border-gray-300">
+            <h3 class="text-lg font-semibold mb-2">提示</h3>
+            <p>AI的学习是一个渐进的过程，需要多局对战才能显著提升棋力。如果你希望快速提升AI的水平，可以尝试：</p>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>与AI进行多局不同风格的对战</li>
+              <li>尝试各种战术和策略，帮助AI积累更多经验</li>
+              <li>定期查看AI的学习进度，了解其提升情况</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- 底部信息 -->
+  <footer class="bg-primary text-white py-4 mt-8">
+    <div class="container mx-auto px-4 text-center">
+      <p>© 2026 国际象棋游戏 | 支持AI自我学习的国际象棋网页应用</p>
+    </div>
+  </footer>
+
+  <!-- 引入JavaScript文件 -->
+  <script>
+    // 当JavaScript启用时，显示页面内容
+    document.addEventListener('DOMContentLoaded', function() {
+      const pageContent = document.getElementById('page-content');
+      if (pageContent) {
+        pageContent.style.display = 'block';
+      }
+    });
+  </script>
+  <script src="js/userSystem.js"></script>
+
+  <script>
+    let userSystem;
+    
+    // 规则选项卡切换
+    document.addEventListener('DOMContentLoaded', async function() {
+      // 初始化用户系统
+      userSystem = new UserSystem();
+      
+      // 检查用户登录状态
+      const user = await userSystem.isLoggedIn();
+      
+      if (user) {
+        console.log('规则页面 - 用户已登录:', user.username);
+        
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.add('hidden');
+        document.getElementById('user-profile').classList.remove('hidden');
+        document.getElementById('username-display').textContent = user.username;
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.add('hidden');
+        document.getElementById('mobile-user-profile').classList.remove('hidden');
+        document.getElementById('mobile-username-display').textContent = user.username;
+      } else {
+        console.log('规则页面 - 用户未登录');
+        
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.remove('hidden');
+        document.getElementById('user-profile').classList.add('hidden');
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.remove('hidden');
+        document.getElementById('mobile-user-profile').classList.add('hidden');
+      }
+      
+      // 桌面端登出按钮点击事件
+      document.getElementById('logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+      
+      // 移动端登出按钮点击事件
+      document.getElementById('mobile-logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+      
+      // 移动端菜单按钮点击事件
+      document.getElementById('mobile-menu-button').addEventListener('click', function() {
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenu.classList.toggle('hidden');
+      });
+      
+      const tabs = document.querySelectorAll('.rule-tab');
+      const sections = document.querySelectorAll('.rule-section');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // 移除所有选项卡的活动状态
+          tabs.forEach(t => t.classList.remove('tab-active'));
+          
+          // 添加当前选项卡的活动状态
+          this.classList.add('tab-active');
+          
+          // 隐藏所有内容部分
+          sections.forEach(section => section.classList.add('hidden'));
+          
+          // 显示对应内容部分
+          const target = this.getAttribute('data-target');
+          document.getElementById(target).classList.remove('hidden');
+        });
+      });
+      
+      // 初始化用户系统
+      userSystem = new UserSystem();
+      
+      await userSystem.initDB();
+       
+      
+      // 检查用户登录状态
+      if (userSystem.isLoggedIn()) {
+        const user = userSystem.getCurrentUser();
+        document.getElementById('user-auth').classList.add('hidden');
+        document.getElementById('user-profile').classList.remove('hidden');
+        document.getElementById('username-display').textContent = user.username;
+      } else {
+        document.getElementById('user-auth').classList.remove('hidden');
+        document.getElementById('user-profile').classList.add('hidden');
+      }
+      
+      // 登出按钮点击事件
+      document.getElementById('logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+    });
+  </script>
+  </div>
+</body>
+</html>

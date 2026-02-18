@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国际象棋 - 游戏</title>
+  <!-- 网站图标 -->
+  <link rel="icon" href="icon.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="icon.jpg">
+  <!-- 基础样式 - 确保在JavaScript禁用时也能正常工作 -->
+  <style>
+    /* 重置样式 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* 基础页面样式 */
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #F5F5DC;
+      color: #3E2723;
+    }
+    
+    /* JavaScript禁用时的页面样式 */
+    noscript {
+      display: block;
+    }
+    
+    /* 默认隐藏页面内容，当JavaScript启用时会显示 */
+    #page-content {
+      display: none;
+    }
+  </style>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#8B4513',
+            secondary: '#D2B48C',
+            accent: '#CD853F',
+            light: '#F5F5DC',
+            dark: '#3E2723'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .chess-board {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        aspect-ratio: 1 / 1;
+        max-width: 100%;
+        max-height: 80vh;
+      }
+      
+      .chess-square {
+        position: relative;
+        transition: all 0.2s ease;
+      }
+      
+      .chess-square:hover {
+        filter: brightness(1.1);
+      }
+      
+      .chess-piece {
+        width: 100%;
+        height: 100%;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .chess-piece.selected {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+        z-index: 10;
+      }
+      
+      .valid-move {
+        position: absolute;
+        width: 25%;
+        height: 25%;
+        background-color: rgba(255, 215, 0, 0.5);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      
+      .last-move {
+        background-color: rgba(255, 215, 0, 0.3) !important;
+      }
+      
+      .check-pulse {
+        animation: pulse 1s infinite;
+      }
+      
+      @keyframes pulse {
+        0% {
+          background-color: rgba(255, 0, 0, 0.3);
+        }
+        50% {
+          background-color: rgba(255, 0, 0, 0.6);
+        }
+        100% {
+          background-color: rgba(255, 0, 0, 0.3);
+        }
+      }
+      
+      .ai-thinking {
+        position: relative;
+        filter: brightness(0.8);
+      }
+      
+      .ai-thinking::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.3);
+        z-index: 10;
+      }
+      
+      .chess-piece-icon {
+        width: 24px;
+        height: 24px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      
+      .toast {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%) translateY(5rem);
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 100;
+      }
+      
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+      
+      /* 隐藏滚动条 */
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-light min-h-screen font-sans text-dark">
+  <!-- JavaScript被禁用时的提示 -->
+  <noscript>
+    <div style="position: fixed; inset: 0; background: #3E2723; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: white; border-radius: 10px; padding: 40px; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <div style="font-size: 60px; color: #CD853F; margin-bottom: 20px;">⚠️</div>
+        <h1 style="font-size: 24px; font-weight: bold; color: #8B4513; margin-bottom: 15px;">JavaScript被禁用</h1>
+        <p style="font-size: 16px; color: #666; margin-bottom: 30px; line-height: 1.6;">
+          本国际象棋游戏需要启用JavaScript才能正常运行。
+          请在浏览器设置中启用JavaScript，然后刷新页面。
+        </p>
+        <button style="background: #8B4513; color: white; border: none; border-radius: 6px; padding: 12px 30px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background-color 0.3s;">
+          刷新页面
+        </button>
+      </div>
+    </div>
+  </noscript>
+  
+  <!-- 页面内容包装器 - 默认隐藏，JavaScript启用时显示 -->
+  <div id="page-content">
+    <!-- 顶部导航 -->
+    <nav class="bg-primary text-white shadow-md sticky top-0 z-50">
+      <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <i class="fa fa-chess-board text-2xl"></i>
+          <h1 class="text-xl font-bold">国际象棋</h1>
+        </div>
+        
+        <!-- 桌面端菜单 -->
+        <div class="hidden lg:flex space-x-4 items-center">
+          <a href="index.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">首页</a>
+          <a href="records.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+          <a href="profile.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">个人信息</a>
+          <a href="download.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">下载</a>
+          <a href="rules.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">规则</a>
+          <a href="support.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">支持</a>
+          
+          <!-- 用户认证/个人信息 -->
+          <div id="user-auth" class="flex items-center space-x-2">
+            <a href="auth.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">登录</a>
+          </div>
+          <div id="user-profile" class="flex items-center space-x-2 hidden">
+            <span id="username-display" class="px-3 py-2 rounded bg-accent">用户名</span>
+            <button id="logout-button" class="px-3 py-2 rounded hover:bg-accent transition-colors">
+              <i class="fa fa-sign-out"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- 移动端菜单按钮 -->
+        <button id="mobile-menu-button" class="lg:hidden text-white focus:outline-none">
+          <i class="fa fa-bars text-xl"></i>
+        </button>
+      </div>
+      
+      <!-- 移动端菜单 -->
+      <div id="mobile-menu" class="hidden lg:hidden bg-primary/95 backdrop-blur-sm border-t border-white/20">
+        <div class="container mx-auto px-4 py-2 space-y-1">
+          <a href="index.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">首页</a>
+          <a href="records.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+          <a href="profile.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">个人信息</a>
+          <a href="download.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">下载</a>
+          <a href="rules.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">规则</a>
+          <a href="support.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">支持</a>
+          
+          <!-- 移动端用户认证/个人信息 -->
+          <div id="mobile-user-auth" class="block px-3 py-2">
+            <a href="auth.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">登录</a>
+          </div>
+          <div id="mobile-user-profile" class="hidden block px-3 py-2">
+            <div class="flex justify-between items-center">
+              <span id="mobile-username-display" class="px-3 py-2 rounded bg-accent">用户名</span>
+              <button id="mobile-logout-button" class="px-3 py-2 rounded hover:bg-accent transition-colors">
+                <i class="fa fa-sign-out"></i> 登出
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-8">
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- 左侧：棋盘区域 -->
+      <div class="lg:w-2/3">
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-6">
+          <div id="chess-board" class="chess-board mx-auto"></div>
+        </div>
+        
+        <!-- 游戏控制按钮 -->
+        <div class="bg-white rounded-lg shadow-lg p-4">
+          <div class="flex flex-wrap justify-center gap-3">
+            <button id="new-game" class="bg-primary hover:bg-accent text-white px-6 py-2 rounded-lg shadow transition-colors flex items-center">
+              <i class="fa fa-plus-circle mr-2"></i> 新游戏
+            </button>
+            <button id="undo" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg shadow transition-colors flex items-center">
+              <i class="fa fa-undo mr-2"></i> 悔棋
+            </button>
+            <button id="restart" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg shadow transition-colors flex items-center">
+              <i class="fa fa-refresh mr-2"></i> 重新开始
+            </button>
+            <button id="save-game" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow transition-colors flex items-center">
+              <i class="fa fa-save mr-2"></i> 保存游戏
+            </button>
+            <button id="resign" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg shadow transition-colors flex items-center">
+              <i class="fa fa-flag mr-2"></i> 认输
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧：游戏信息和控制区域 -->
+      <div class="lg:w-1/3 space-y-6">
+        <!-- 游戏信息 -->
+        <div class="bg-white rounded-lg shadow-lg p-4">
+          <h2 class="text-xl font-bold mb-4 text-primary border-b pb-2">游戏信息</h2>
+          
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="font-medium">当前回合:</span>
+              <span id="current-turn" class="flex items-center">
+                <span class="w-4 h-4 rounded-full bg-white border border-gray-300 mr-2"></span>
+                白方
+              </span>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="font-medium">步数:</span>
+              <span id="move-count">1</span>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="font-medium">游戏状态:</span>
+              <span id="game-status" class="font-bold text-green-600">进行中</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- AI设置 -->
+        <div class="bg-white rounded-lg shadow-lg p-4">
+          <h2 class="text-xl font-bold mb-4 text-primary border-b pb-2">AI设置</h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block mb-2 font-medium">当前难度:</label>
+              <div id="current-ai-difficulty" class="w-full p-2 border rounded bg-light font-medium">
+                等级4 - 中等
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <label for="ai-learning" class="font-medium">学习模式:</label>
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="ai-learning" class="sr-only peer" checked>
+                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            
+            <div>
+              <label class="block mb-1 font-medium">学习进度:</label>
+              <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="ai-learning-bar" class="bg-accent h-2.5 rounded-full" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-xs mt-1">
+                <span>0%</span>
+                <span id="ai-learning-progress">0%</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 吃子记录 -->
+        <div class="bg-white rounded-lg shadow-lg p-4">
+          <h2 class="text-xl font-bold mb-4 text-primary border-b pb-2">吃子记录</h2>
+          
+          <div class="space-y-3">
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 mb-1">白方被吃:</h3>
+              <div id="white-captures" class="flex flex-wrap gap-1 min-h-[30px]">
+                <!-- 白方被吃的棋子将在这里显示 -->
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 mb-1">黑方被吃:</h3>
+              <div id="black-captures" class="flex flex-wrap gap-1 min-h-[30px]">
+                <!-- 黑方被吃的棋子将在这里显示 -->
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 移动历史 -->
+        <div class="bg-white rounded-lg shadow-lg p-4">
+          <h2 class="text-xl font-bold mb-4 text-primary border-b pb-2">移动历史</h2>
+          
+          <div id="move-history" class="max-h-[200px] overflow-y-auto p-2 bg-light rounded">
+            <p class="text-gray-500 italic text-center">暂无记录</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 游戏结果模态框 -->
+  <div id="game-result-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+      <h2 class="text-2xl font-bold text-center mb-6 text-primary">游戏结束</h2>
+      
+      <p id="game-result-text" class="text-xl text-center mb-8">游戏结果将显示在这里</p>
+      
+      <div class="flex justify-center space-x-4">
+        <button id="new-game-modal" class="bg-primary hover:bg-accent text-white px-6 py-2 rounded-lg shadow transition-colors">
+          新游戏
+        </button>
+        <button id="close-modal" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg shadow transition-colors">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示框 -->
+  <div id="invalid-move-toast" class="toast bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
+    无效的移动!
+  </div>
+  
+  <div id="loading-toast" class="toast bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center">
+    <i class="fa fa-spinner fa-spin mr-2"></i> AI正在思考...
+  </div>
+
+  <!-- 底部信息 -->
+  <footer class="bg-primary text-white py-4 mt-8">
+    <div class="container mx-auto px-4 text-center">
+      <p>© 2026 国际象棋游戏 | 支持AI自我学习的国际象棋网页应用</p>
+    </div>
+  </footer>
+
+  <!-- 引入JavaScript文件 -->
+  <script>
+    // 当JavaScript启用时，显示页面内容
+    document.addEventListener('DOMContentLoaded', function() {
+      const pageContent = document.getElementById('page-content');
+      if (pageContent) {
+        pageContent.style.display = 'block';
+      }
+    });
+  </script>
+  <script src="js/chessRules.js"></script>
+  <script src="js/aiLogic.js"></script>
+  <script src="js/stockfishAI.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/userSystem.js"></script>
+
+  <script src="js/script.js"></script>
+  <script>
+    // 处理用户登录状态
+    document.addEventListener('DOMContentLoaded', async function() {
+      const userSystem = new UserSystem();
+      
+      await userSystem.initDB();
+       
+      
+      // 确保用户状态已经加载
+      await userSystem.loadCurrentUserFromStorage();
+      
+      console.log('游戏页 - 当前用户:', userSystem.getCurrentUser());
+      console.log('游戏页 - 是否登录:', userSystem.isLoggedIn());
+      
+      // 检查用户登录状态
+      if (userSystem.isLoggedIn()) {
+        const user = userSystem.getCurrentUser();
+        console.log('游戏页 - 用户已登录:', user.username);
+        
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.add('hidden');
+        document.getElementById('user-profile').classList.remove('hidden');
+        document.getElementById('username-display').textContent = user.username;
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.add('hidden');
+        document.getElementById('mobile-user-profile').classList.remove('hidden');
+        document.getElementById('mobile-username-display').textContent = user.username;
+      } else {
+        console.log('游戏页 - 用户未登录');
+        
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.remove('hidden');
+        document.getElementById('user-profile').classList.add('hidden');
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.remove('hidden');
+        document.getElementById('mobile-user-profile').classList.add('hidden');
+      }
+      
+      // 桌面端登出按钮点击事件
+      document.getElementById('logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+      
+      // 移动端登出按钮点击事件
+      document.getElementById('mobile-logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+      
+      // 移动端菜单按钮点击事件
+      document.getElementById('mobile-menu-button').addEventListener('click', function() {
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenu.classList.toggle('hidden');
+      });
+    });
+  </script>
+  </div>
+</body>
+</html>

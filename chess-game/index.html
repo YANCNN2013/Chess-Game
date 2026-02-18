@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国际象棋 - 支持AI自我学习的国际象棋游戏</title>
+  <!-- 网站图标 -->
+  <link rel="icon" href="icon.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="icon.jpg">
+  <!-- 基础样式 - 确保在JavaScript禁用时也能正常工作 -->
+  <style>
+    /* 重置样式 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* 基础页面样式 */
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #F5F5DC;
+      color: #3E2723;
+    }
+    
+    /* JavaScript禁用时的页面样式 */
+    noscript {
+      display: block;
+    }
+    
+    /* 默认隐藏页面内容，当JavaScript启用时会显示 */
+    #page-content {
+      display: none;
+    }
+    
+    /* 棋盘动画效果 */
+    .animate-fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* 按钮悬停效果 */
+    .btn-hover-scale {
+      transition: transform 0.2s ease;
+    }
+    
+    .btn-hover-scale:hover {
+      transform: scale(1.05);
+    }
+  </style>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#8B4513',
+            secondary: '#D2B48C',
+            accent: '#CD853F',
+            light: '#F5F5DC',
+            dark: '#3E2723'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .chess-board-preview {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        aspect-ratio: 1 / 1;
+        max-width: 100%;
+      }
+      
+      .chess-square-preview {
+        position: relative;
+      }
+      
+      .feature-card {
+        transition: all 0.3s ease;
+      }
+      
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      }
+      
+      /* 隐藏滚动条 */
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-light min-h-screen font-sans text-dark">
+  <!-- JavaScript被禁用时的提示 -->
+  <noscript>
+    <div style="position: fixed; inset: 0; background: #3E2723; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: white; border-radius: 10px; padding: 40px; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <div style="font-size: 60px; color: #CD853F; margin-bottom: 20px;">⚠️</div>
+        <h1 style="font-size: 24px; font-weight: bold; color: #8B4513; margin-bottom: 15px;">JavaScript被禁用</h1>
+        <p style="font-size: 16px; color: #666; margin-bottom: 30px; line-height: 1.6;">
+          本国际象棋游戏需要启用JavaScript才能正常运行。
+          请在浏览器设置中启用JavaScript，然后刷新页面。
+        </p>
+      </div>
+    </div>
+  </noscript>
+  
+  <!-- 页面内容包装器 - 默认隐藏，JavaScript启用时显示 -->
+  <div id="page-content">
+    <!-- 顶部导航 -->
+    <nav class="bg-primary text-white shadow-md sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-chess-board text-2xl"></i>
+        <h1 class="text-xl font-bold">国际象棋</h1>
+      </div>
+      
+      <!-- 移动端汉堡菜单按钮 -->
+      <button id="mobile-menu-button" class="lg:hidden text-white focus:outline-none">
+        <i class="fa fa-bars text-2xl"></i>
+      </button>
+      
+      <!-- 桌面端导航菜单 -->
+      <div id="nav-menu" class="hidden lg:flex space-x-4 items-center">
+        <a href="index.html" class="px-3 py-2 rounded hover:bg-accent transition-colors active">首页</a>
+        
+        <a href="records.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+        <a href="profile.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">个人信息</a>
+        <a href="download.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">下载</a>
+        <a href="rules.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">规则</a>
+        <div id="user-auth" class="flex items-center space-x-2">
+          <a href="auth.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">登录</a>
+        </div>
+        <div id="user-profile" class="flex items-center space-x-2 hidden">
+          <span id="username-display" class="px-3 py-2 rounded bg-accent">用户名</span>
+          <button id="logout-button" class="px-3 py-2 rounded hover:bg-accent transition-colors">
+            <i class="fa fa-sign-out"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 移动端导航菜单 -->
+    <div id="mobile-menu" class="hidden lg:hidden bg-primary/95 backdrop-blur-sm">
+      <div class="container mx-auto px-4 py-3 space-y-2">
+        <a href="index.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors active">首页</a>
+        <a href="records.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+        <a href="profile.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">个人信息</a>
+        <a href="download.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">下载</a>
+        <a href="rules.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">规则</a>
+        <div id="mobile-user-auth" class="flex items-center space-x-2 py-2">
+          <a href="auth.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">登录</a>
+        </div>
+        <div id="mobile-user-profile" class="flex flex-col space-y-2 py-2 hidden">
+          <span id="mobile-username-display" class="block px-3 py-2 rounded bg-accent">用户名</span>
+          <button id="mobile-logout-button" class="block px-3 py-2 rounded hover:bg-accent transition-colors text-left">
+            <i class="fa fa-sign-out mr-2"></i> 退出登录
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 英雄区域 -->
+  <section class="bg-gradient-to-br from-primary/90 to-primary text-white py-16 px-4">
+    <div class="container mx-auto max-w-6xl">
+      <div class="flex flex-col lg:flex-row items-center gap-12">
+        <!-- 左侧：英雄文本 -->
+        <div class="lg:w-1/2 animate-fade-in">
+          <h1 class="text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+            挑战AI，提升你的国际象棋技艺
+          </h1>
+          <p class="text-xl text-white/90 mb-6 leading-relaxed">
+            一款支持AI自我学习的国际象棋游戏，适合从初学者到大师级玩家。
+            多种难度级别，实时学习，让你在每一局游戏中都能获得提升。
+          </p>
+          
+          <!-- AI难度选择 -->
+          <div class="mb-6">
+            <label for="ai-difficulty-select" class="block text-lg font-medium mb-2">选择AI难度：</label>
+            <select id="ai-difficulty-select" class="bg-accent hover:bg-accent/90 text-white font-medium px-8 py-3 rounded-lg shadow-lg btn-hover-scale flex items-center">
+              <option value="level1">等级1 - 非常简单</option>
+              <option value="level2">等级2 - 简单</option>
+              <option value="level3">等级3 - 较简单</option>
+              <option value="level4" selected>等级4 - 中等</option>
+              <option value="level5">等级5 - 较困难</option>
+              <option value="level6">等级6 - 困难</option>
+              <option value="level7">等级7 - 非常困难</option>
+              <option value="level8">等级8 - 专家级别</option>
+            </select>
+          </div>
+          
+          <div class="flex flex-wrap gap-4">
+            <button id="start-game-btn" class="bg-accent hover:bg-accent/90 text-white font-medium px-8 py-3 rounded-lg shadow-lg btn-hover-scale flex items-center">
+              <i class="fa fa-play-circle mr-2"></i> 开始游戏
+            </button>
+            <a href="rules.html" class="bg-white/20 hover:bg-white/30 text-white font-medium px-8 py-3 rounded-lg shadow-lg btn-hover-scale flex items-center backdrop-blur-sm">
+              <i class="fa fa-book mr-2"></i> 学习规则
+            </a>
+          </div>
+          <div class="mt-8 flex items-center gap-6">
+            <div class="flex -space-x-3">
+              <img src="default.png" alt="用户头像" class="w-10 h-10 rounded-full border-2 border-white">
+              <img src="default.png" alt="用户头像" class="w-10 h-10 rounded-full border-2 border-white">
+              <img src="default.png" alt="用户头像" class="w-10 h-10 rounded-full border-2 border-white">
+            </div>
+            <div class="text-sm">
+              <div class="font-medium">已有10,000+玩家</div>
+              <div class="text-white/80">加入我们，一起提升棋艺</div>
+            </div>
+          </div>
+        </div>
+        <!-- 右侧：棋盘预览 -->
+        <div class="lg:w-1/2 animate-fade-in" style="animation-delay: 0.2s;">
+          <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-4">
+            <div class="chess-board-preview mx-auto w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-3xl">
+              <!-- 棋盘预览 -->
+              <!-- 第0行（黑方后排） -->
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bR.c33a3d54.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bN.d0665564.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bB.77e9debf.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bQ.5abdb5aa.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bK.c5f22c23.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bB.77e9debf.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bN.d0665564.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bR.c33a3d54.svg');"></div></div>
+              
+              <!-- 第1行（黑方兵） -->
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bP.09539f32.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bP.09539f32.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bP.09539f32.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bP.09539f32.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bP.09539f32.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bP.09539f32.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bP.09539f32.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/bP.09539f32.svg');"></div></div>
+              
+              <!-- 第2行（空） -->
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              
+              <!-- 第3行（空） -->
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              
+              <!-- 第4行（空） -->
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              
+              <!-- 第5行（空） -->
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              <div class="chess-square-preview bg-white"></div>
+              <div class="chess-square-preview bg-secondary"></div>
+              
+              <!-- 第6行（白方兵） -->
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wP.0596b7ce.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wP.0596b7ce.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wP.0596b7ce.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wP.0596b7ce.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wP.0596b7ce.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wP.0596b7ce.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wP.0596b7ce.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wP.0596b7ce.svg');"></div></div>
+              
+              <!-- 第7行（白方后排） -->
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wR.e9e95adc.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wN.68b788d7.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wB.b7d1a118.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wQ.79c9227e.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wK.bc7274dd.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wB.b7d1a118.svg');"></div></div>
+              <div class="chess-square-preview bg-white relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wN.68b788d7.svg');"></div></div>
+              <div class="chess-square-preview bg-secondary relative"><div class="absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: url('https://lichess1.org/assets/hashed/wR.e9e95adc.svg');"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 特性介绍 -->
+  <section class="py-16 px-4">
+    <div class="container mx-auto max-w-6xl">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-primary mb-4">游戏特性</h2>
+        <p class="text-lg text-dark/70 max-w-3xl mx-auto">
+          我们的国际象棋游戏提供了丰富的功能，满足不同玩家的需求
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- 特性卡片1 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 feature-card">
+          <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <i class="fa fa-cogs text-2xl text-primary"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">AI自我学习</h3>
+          <p class="text-dark/70">
+            我们的AI会在每一局游戏中学习，不断提升自己的棋艺，让你面对更强大的对手。
+          </p>
+        </div>
+        <!-- 特性卡片2 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 feature-card">
+          <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <i class="fa fa-trophy text-2xl text-primary"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">多种难度级别</h3>
+          <p class="text-dark/70">
+            从初级到大师级，8种难度级别，适合不同水平的玩家，让你逐步提升棋艺。
+          </p>
+        </div>
+        <!-- 特性卡片3 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 feature-card">
+          <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <i class="fa fa-history text-2xl text-primary"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">游戏记录</h3>
+          <p class="text-dark/70">
+            自动保存你的游戏记录，随时查看历史对局，分析你的棋艺进步。
+          </p>
+        </div>
+        <!-- 特性卡片4 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 feature-card">
+          <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <i class="fa fa-mobile text-2xl text-primary"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">响应式设计</h3>
+          <p class="text-dark/70">
+            适配各种设备，无论是电脑、平板还是手机，都能获得良好的游戏体验。
+          </p>
+        </div>
+        <!-- 特性卡片5 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 feature-card">
+          <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <i class="fa fa-users text-2xl text-primary"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">用户系统</h3>
+          <p class="text-dark/70">
+            注册登录，保存你的游戏数据，查看你的棋艺排名，与其他玩家交流。
+          </p>
+        </div>
+        <!-- 特性卡片6 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 feature-card">
+          <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <i class="fa fa-download text-2xl text-primary"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">离线游戏</h3>
+          <p class="text-dark/70">
+            支持离线游戏，无需网络连接，随时可以享受国际象棋的乐趣。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI学习功能 -->
+  <section class="py-16 px-4 bg-gradient-to-br from-primary/5 to-secondary/10">
+    <div class="container mx-auto max-w-6xl">
+      <div class="flex flex-col lg:flex-row items-center gap-12">
+        <!-- 左侧：AI学习说明 -->
+        <div class="lg:w-1/2">
+          <h2 class="text-3xl font-bold text-primary mb-4">AI自我学习系统</h2>
+          <p class="text-lg text-dark/70 mb-6">
+            我们的AI采用了先进的机器学习算法，能够在每一局游戏中学习你的棋艺风格和策略，
+            不断调整自己的战术，为你提供更具挑战性的对局体验。
+          </p>
+          <ul class="space-y-4">
+            <li class="flex items-start">
+              <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+              <span>实时分析你的走棋习惯和策略</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+              <span>根据你的水平自动调整难度</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+              <span>学习进度可视化，让你看到AI的成长</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+              <span>支持关闭学习模式，固定难度</span>
+            </li>
+          </ul>
+        </div>
+        <!-- 右侧：AI学习进度示例 -->
+        <div class="lg:w-1/2 bg-white rounded-xl shadow-lg p-6">
+          <h3 class="text-xl font-bold mb-4">AI学习进度示例</h3>
+          <div class="space-y-6">
+            <div>
+              <div class="flex justify-between mb-2">
+                <span class="font-medium">开局策略学习</span>
+                <span class="text-primary">85%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-primary h-3 rounded-full" style="width: 85%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-2">
+                <span class="font-medium">中局战术学习</span>
+                <span class="text-primary">72%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-primary h-3 rounded-full" style="width: 72%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-2">
+                <span class="font-medium">残局技巧学习</span>
+                <span class="text-primary">90%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-primary h-3 rounded-full" style="width: 90%"></div>
+              </div>
+            </div>
+            <div class="bg-primary/5 p-4 rounded-lg">
+              <p class="text-sm text-dark/70">
+                <i class="fa fa-info-circle text-primary mr-2"></i>
+                AI学习进度会根据你的游戏次数和难度自动更新，玩得越多，AI越强。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 游戏截图 -->
+  <section class="py-16 px-4">
+    <div class="container mx-auto max-w-6xl">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-primary mb-4">游戏截图</h2>
+        <p class="text-lg text-dark/70 max-w-3xl mx-auto">
+          查看游戏的实际效果，了解我们的界面设计和功能
+        </p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+          <img src="game.png" alt="游戏截图" class="w-full h-64 object-cover">
+          <div class="p-6">
+            <h3 class="text-xl font-bold mb-2">游戏界面</h3>
+            <p class="text-dark/70">
+              简洁直观的游戏界面，让你专注于棋局，享受游戏的乐趣。
+            </p>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+          <img src="records.png" alt="游戏截图" class="w-full h-64 object-cover">
+          <div class="p-6">
+            <h3 class="text-xl font-bold mb-2">记录页面</h3>
+            <p class="text-dark/70">
+              详细的游戏记录，让你回顾每一步走棋，分析自己的不足之处。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 底部信息 -->
+  <footer class="bg-primary text-white py-8">
+    <div class="container mx-auto max-w-6xl px-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <!-- 关于我们 -->
+        <div>
+          <div class="flex items-center space-x-2 mb-4">
+            <i class="fa fa-chess-board text-2xl"></i>
+            <h3 class="text-xl font-bold">国际象棋</h3>
+          </div>
+          <p class="text-white/80 mb-4">
+            一款支持AI自我学习的国际象棋游戏，让你在每一局游戏中都能获得提升。
+          </p>
+          <div class="flex space-x-4">
+            <a href="https://weibo.com/newlogin?tabtype=weibo&gid=102803&openLoginLayer=0&url=" class="bg-white/20 hover:bg-white/30 w-10 h-10 rounded-full flex items-center justify-center">
+              <i class="fa fa-weibo"></i>
+            </a>
+            <a href="https://wx.qq.com/" class="bg-white/20 hover:bg-white/30 w-10 h-10 rounded-full flex items-center justify-center">
+              <i class="fa fa-wechat"></i>
+            </a>
+            <a href="https://github.com" class="bg-white/20 hover:bg-white/30 w-10 h-10 rounded-full flex items-center justify-center">
+              <i class="fa fa-github"></i>
+            </a>
+          </div>
+        </div>
+        <!-- 快速链接 -->
+        <div>
+          <h3 class="text-lg font-bold mb-4">快速链接</h3>
+          <ul class="space-y-2">
+            <li><a href="index.html" class="text-white/80 hover:text-white">首页</a></li>
+            <li><a href="rules.html" class="text-white/80 hover:text-white">规则</a></li>
+            <li><a href="records.html" class="text-white/80 hover:text-white">记录</a></li>
+            <li><a href="profile.html" class="text-white/80 hover:text-white">个人信息</a></li>
+            <li><a href="support.html" class="text-white/80 hover:text-white">支持</a></li>
+          </ul>
+        </div>
+        <!-- 支持 -->
+        <div>
+          <h3 class="text-lg font-bold mb-4">支持</h3>
+          <ul class="space-y-2">
+            <li><a href="support.html#faq" class="text-white/80 hover:text-white">常见问题</a></li>
+            <li><a href="support.html#contact" class="text-white/80 hover:text-white">联系我们</a></li>
+            <li><a href="support.html#privacy" class="text-white/80 hover:text-white">隐私政策</a></li>
+            <li><a href="support.html#terms" class="text-white/80 hover:text-white">使用条款</a></li>
+          </ul>
+        </div>
+        <!-- 下载 -->
+        <div>
+          <h3 class="text-lg font-bold mb-4">下载</h3>
+          <p class="text-white/80 mb-4">
+            下载我们的应用，随时随地享受国际象棋的乐趣。
+          </p>
+          <div class="space-y-3">
+            <a href="download.html" class="bg-white text-primary font-medium px-4 py-2 rounded-lg flex items-center justify-center">
+              <i class="fa fa-download mr-2"></i> 下载应用
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-white/20 mt-8 pt-6 text-center text-white/80">
+        <p>© 2026 国际象棋游戏 | 支持AI自我学习的国际象棋网页应用</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 引入JavaScript文件 -->
+  <script>
+    // 当JavaScript启用时，显示页面内容
+    document.addEventListener('DOMContentLoaded', function() {
+      const pageContent = document.getElementById('page-content');
+      if (pageContent) {
+        pageContent.style.display = 'block';
+      }
+    });
+  </script>
+  <script src="js/userSystem.js"></script>
+  <script>
+    // 处理用户登录状态
+    document.addEventListener('DOMContentLoaded', async function() {
+      const userSystem = new UserSystem();
+      
+      await userSystem.initDB();
+       
+      
+      // 确保用户状态已经加载
+      await userSystem.loadCurrentUserFromStorage();
+      
+      console.log('首页 - 当前用户:', userSystem.getCurrentUser());
+      console.log('首页 - 是否登录:', userSystem.isLoggedIn());
+      
+      // 检查用户登录状态
+      if (userSystem.isLoggedIn()) {
+        const user = userSystem.getCurrentUser();
+        console.log('首页 - 用户已登录:', user.username);
+        
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.add('hidden');
+        document.getElementById('user-profile').classList.remove('hidden');
+        document.getElementById('username-display').textContent = user.username;
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.add('hidden');
+        document.getElementById('mobile-user-profile').classList.remove('hidden');
+        document.getElementById('mobile-username-display').textContent = user.username;
+      } else {
+        console.log('首页 - 用户未登录');
+        
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.remove('hidden');
+        document.getElementById('user-profile').classList.add('hidden');
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.remove('hidden');
+        document.getElementById('mobile-user-profile').classList.add('hidden');
+      }
+      
+      // 桌面端登出按钮点击事件
+      document.getElementById('logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+      
+      // 移动端登出按钮点击事件
+      document.getElementById('mobile-logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.reload();
+      });
+      
+      // 处理开始游戏按钮点击事件
+      document.getElementById('start-game-btn').addEventListener('click', function() {
+        // 获取选择的AI难度
+        const difficulty = document.getElementById('ai-difficulty-select').value;
+        // 保存难度到localStorage
+        localStorage.setItem('selectedAIDifficulty', difficulty);
+        // 跳转到游戏页面
+        window.location.href = 'game.html';
+      });
+      
+      // 移动端菜单按钮点击事件
+      document.getElementById('mobile-menu-button').addEventListener('click', function() {
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenu.classList.toggle('hidden');
+      });
+    });
+  </script>
+  </div>
+</body>
+</html>
