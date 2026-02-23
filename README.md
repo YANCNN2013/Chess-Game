@@ -5,7 +5,7 @@ A chess web game developed with HTML5, CSS3, and JavaScript, supporting player v
 ## Features
 
 - **Complete chess rules implementation**: Including all piece movements, capturing rules, castling, en passant, pawn promotion, etc.
-- **AI battle system**: Supports three difficulty levels (easy, medium, hard) and integrates Stockfish AI engine
+- **AI battle system**: Supports eight difficulty levels and integrates Stockfish AI engine
 - **AI self-learning**: AI can record battle data, learn and optimize strategies, and improve future game performance
 - **Game controls**: Supports new game, undo, restart, save game, etc.
 - **Data recording**: Saves historical battle records, displays AI learning progress and statistical data
