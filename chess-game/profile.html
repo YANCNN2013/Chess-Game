@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人信息 - 国际象棋</title>
+  <!-- 网站图标 -->
+  <link rel="icon" href="icon.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="icon.jpg">
+  <!-- 基础样式 - 确保在JavaScript禁用时也能正常工作 -->
+  <style>
+    /* 重置样式 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* 基础页面样式 */
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #F5F5DC;
+      color: #3E2723;
+    }
+    
+    /* JavaScript禁用时的页面样式 */
+    noscript {
+      display: block;
+    }
+    
+    /* 默认隐藏页面内容，当JavaScript启用时会显示 */
+    #page-content {
+      display: none;
+    }
+  </style>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#8B4513',
+            secondary: '#D2B48C',
+            accent: '#CD853F',
+            light: '#F5F5DC',
+            dark: '#3E2723'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .profile-container {
+        min-height: calc(100vh - 120px);
+      }
+      
+      .profile-card {
+        max-width: 600px;
+        width: 100%;
+      }
+      
+      .form-input {
+        transition: all 0.3s ease;
+      }
+      
+      .form-input:focus {
+        box-shadow: 0 0 0 3px rgba(205, 133, 63, 0.3);
+      }
+      
+      /* 隐藏滚动条 */
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-light min-h-screen font-sans text-dark">
+  <!-- JavaScript被禁用时的提示 -->
+  <noscript>
+    <div style="position: fixed; inset: 0; background: #3E2723; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: white; border-radius: 10px; padding: 40px; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <div style="font-size: 60px; color: #CD853F; margin-bottom: 20px;">⚠️</div>
+        <h1 style="font-size: 24px; font-weight: bold; color: #8B4513; margin-bottom: 15px;">JavaScript被禁用</h1>
+        <p style="font-size: 16px; color: #666; margin-bottom: 30px; line-height: 1.6;">
+          本国际象棋游戏需要启用JavaScript才能正常运行。
+          请在浏览器设置中启用JavaScript，然后刷新页面。
+        </p>
+        <button style="background: #8B4513; color: white; border: none; border-radius: 6px; padding: 12px 30px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background-color 0.3s;">
+          刷新页面
+        </button>
+      </div>
+    </div>
+  </noscript>
+  
+  <!-- 页面内容包装器 - 默认隐藏，JavaScript启用时显示 -->
+  <div id="page-content">
+    <!-- 顶部导航 -->
+    <nav class="bg-primary text-white shadow-md sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-chess-board text-2xl"></i>
+        <h1 class="text-xl font-bold">国际象棋</h1>
+      </div>
+      
+      <!-- 桌面端菜单 -->
+      <div class="hidden lg:flex space-x-4 items-center">
+        <a href="index.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">首页</a>
+        
+        <a href="records.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+        <a href="profile.html" class="px-3 py-2 rounded bg-accent transition-colors active">个人信息</a>
+        <a href="download.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">下载</a>
+        <a href="rules.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">规则</a>
+        <a href="support.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">支持</a>
+        <div id="user-auth" class="flex items-center space-x-2">
+          <a href="auth.html" class="px-3 py-2 rounded hover:bg-accent transition-colors">登录</a>
+        </div>
+        <div id="user-profile" class="flex items-center space-x-2 hidden">
+          <span id="username-display" class="px-3 py-2 rounded bg-accent">用户名</span>
+          <button id="logout-button" class="px-3 py-2 rounded hover:bg-accent transition-colors">
+            <i class="fa fa-sign-out"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 移动端菜单按钮 -->
+      <button id="mobile-menu-button" class="lg:hidden px-3 py-2 rounded hover:bg-accent transition-colors">
+        <i class="fa fa-bars text-xl"></i>
+      </button>
+    </div>
+    
+    <!-- 移动端菜单 -->
+    <div id="mobile-menu" class="hidden lg:hidden bg-primary bg-opacity-95 backdrop-blur-sm">
+      <div class="container mx-auto px-4 py-2 space-y-1">
+        <a href="index.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">首页</a>
+        
+        <a href="records.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">记录</a>
+        <a href="profile.html" class="block px-3 py-2 rounded bg-accent transition-colors active">个人信息</a>
+        <a href="download.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">下载</a>
+        <a href="rules.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">规则</a>
+        <a href="support.html" class="block px-3 py-2 rounded hover:bg-accent transition-colors">支持</a>
+        
+        <div id="mobile-user-auth" class="block px-3 py-2 rounded hover:bg-accent transition-colors">
+          <a href="auth.html" class="w-full">登录</a>
+        </div>
+        <div id="mobile-user-profile" class="flex items-center justify-between space-x-2 hidden px-3 py-2 rounded bg-accent">
+          <span id="mobile-username-display">用户名</span>
+          <button id="mobile-logout-button" class="px-3 py-1 rounded hover:bg-primary transition-colors">
+            <i class="fa fa-sign-out"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-8">
+    <div class="profile-container flex items-center justify-center">
+      <div class="profile-card bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="p-6">
+          <h2 class="text-2xl font-bold text-center mb-6 text-primary">个人信息</h2>
+          
+          <div class="space-y-6">
+            <!-- 基本信息 -->
+            <div>
+              <h3 class="text-lg font-medium mb-4 text-accent">基本信息</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="username" class="block mb-2 font-medium">用户名</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <i class="fa fa-user text-gray-400"></i>
+                    </span>
+                    <input type="text" id="username" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent" disabled>
+                  </div>
+                </div>
+                
+                <div>
+                  <label for="email" class="block mb-2 font-medium">邮箱</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <i class="fa fa-envelope text-gray-400"></i>
+                    </span>
+                    <input type="email" id="email" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 安全设置 -->
+            <div>
+              <h3 class="text-lg font-medium mb-4 text-accent">安全设置</h3>
+              <div class="space-y-4">
+                <div>
+                  <label for="current-password" class="block mb-2 font-medium">当前密码</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <i class="fa fa-lock text-gray-400"></i>
+                    </span>
+                    <input type="password" id="current-password" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent" placeholder="请输入当前密码">
+                  </div>
+                </div>
+                
+                <div>
+                  <label for="new-password" class="block mb-2 font-medium">新密码</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <i class="fa fa-lock text-gray-400"></i>
+                    </span>
+                    <input type="password" id="new-password" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent" placeholder="请输入新密码（至少6位）">
+                  </div>
+                </div>
+                
+                <div>
+                  <label for="confirm-password" class="block mb-2 font-medium">确认新密码</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <i class="fa fa-lock text-gray-400"></i>
+                    </span>
+                    <input type="password" id="confirm-password" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent" placeholder="请再次输入新密码">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 安全问题 -->
+            <div>
+              <h3 class="text-lg font-medium mb-4 text-accent">安全问题</h3>
+              <div class="space-y-4">
+                <div>
+                  <label for="security-question" class="block mb-2 font-medium">安全问题</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <i class="fa fa-question-circle text-gray-400"></i>
+                    </span>
+                    <select id="security-question" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent">
+                      <option value="">请选择安全问题</option>
+                      <option value="您的出生城市是？">您的出生城市是？</option>
+                      <option value="您的小学名称是？">您的小学名称是？</option>
+                      <option value="您的第一个宠物名字是？">您的第一个宠物名字是？</option>
+                      <option value="您的母亲姓氏是？">您的母亲姓氏是？</option>
+                      <option value="您的高中毕业年份是？">您的高中毕业年份是？</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label for="security-answer" class="block mb-2 font-medium">安全答案</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <i class="fa fa-key text-gray-400"></i>
+                    </span>
+                    <input type="text" id="security-answer" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent" placeholder="请输入安全答案">
+                  </div>
+                </div>
+              </div>
+              <p class="text-sm text-gray-600 mt-2">设置安全问题后，您可以通过回答安全问题来重置密码。</p>
+            </div>
+            
+            <!-- 数据管理 -->
+            <div>
+              <h3 class="text-lg font-medium mb-4 text-accent">数据管理</h3>
+              <div class="space-y-4">
+                <p class="text-sm text-gray-600 mb-2">备份或恢复您的游戏数据</p>
+                <div class="flex space-x-4">
+                  <button id="export-data-button" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fa fa-download mr-2"></i> 导出数据
+                  </button>
+                  <button id="import-data-button" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fa fa-upload mr-2"></i> 导入数据
+                  </button>
+                </div>
+                <input type="file" id="import-file-input" accept=".json" class="hidden">
+                <p class="text-xs text-gray-500 mt-2">注意：导入数据将覆盖现有所有用户数据，请谨慎操作</p>
+              </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex space-x-4">
+              <button id="save-button" class="flex-1 bg-primary hover:bg-accent text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                <i class="fa fa-save mr-2"></i> 保存更改
+              </button>
+              <button id="cancel-button" class="flex-1 bg-gray-300 hover:bg-gray-400 text-dark font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                <i class="fa fa-times mr-2"></i> 取消
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 底部信息 -->
+  <footer class="bg-primary text-white py-4 mt-8">
+    <div class="container mx-auto px-4 text-center">
+      <p>© 2026 国际象棋游戏 | 支持AI自我学习的国际象棋网页应用</p>
+    </div>
+  </footer>
+
+  <!-- 提示框 -->
+  <div id="message-toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 z-50">
+    消息内容
+  </div>
+
+  <!-- 引入JavaScript文件 -->
+  <script>
+    // 当JavaScript启用时，显示页面内容
+    document.addEventListener('DOMContentLoaded', function() {
+      const pageContent = document.getElementById('page-content');
+      if (pageContent) {
+        pageContent.style.display = 'block';
+      }
+    });
+  </script>
+  <script src="js/userSystem.js"></script>
+
+  <script>
+    let userSystem;
+    let currentUser;
+    
+    // DOM加载完成后初始化
+    document.addEventListener('DOMContentLoaded', async function() {
+
+      
+      // 初始化用户系统
+      userSystem = new UserSystem();
+      
+      await userSystem.initDB();
+       
+      
+      // 检查用户是否已登录
+      if (!userSystem.isLoggedIn()) {
+        showMessage('请先登录', 'error');
+        setTimeout(() => {
+          window.location.href = 'auth.html';
+        }, 2000);
+        return;
+      }
+      
+      // 获取当前用户信息
+      currentUser = userSystem.getCurrentUser();
+      
+      // 处理导航栏用户信息
+      if (userSystem.isLoggedIn()) {
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.add('hidden');
+        document.getElementById('user-profile').classList.remove('hidden');
+        document.getElementById('username-display').textContent = currentUser.username;
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.add('hidden');
+        document.getElementById('mobile-user-profile').classList.remove('hidden');
+        document.getElementById('mobile-username-display').textContent = currentUser.username;
+      } else {
+        // 桌面端菜单
+        document.getElementById('user-auth').classList.remove('hidden');
+        document.getElementById('user-profile').classList.add('hidden');
+        
+        // 移动端菜单
+        document.getElementById('mobile-user-auth').classList.remove('hidden');
+        document.getElementById('mobile-user-profile').classList.add('hidden');
+      }
+      
+      // 桌面端登出按钮点击事件
+      document.getElementById('logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.href = 'auth.html';
+      });
+      
+      // 移动端登出按钮点击事件
+      document.getElementById('mobile-logout-button').addEventListener('click', async function() {
+        await userSystem.logout();
+        window.location.href = 'auth.html';
+      });
+      
+      // 移动端菜单按钮点击事件
+      document.getElementById('mobile-menu-button').addEventListener('click', function() {
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenu.classList.toggle('hidden');
+      });
+      
+      // 加载用户信息
+      await loadUserInfo();
+      
+      // 保存按钮点击事件
+      document.getElementById('save-button').addEventListener('click', async function() {
+        await saveUserInfo();
+      });
+      
+      // 取消按钮点击事件
+      document.getElementById('cancel-button').addEventListener('click', function() {
+        loadUserInfo();
+        showMessage('已取消更改', 'info');
+      });
+      
+      // 导出数据按钮点击事件
+      document.getElementById('export-data-button').addEventListener('click', async function() {
+        try {
+          showMessage('正在导出数据...', 'info');
+          const data = await userSystem.exportUserData();
+          userSystem.downloadUserData(data);
+          showMessage('数据导出成功', 'success');
+        } catch (error) {
+          console.error('导出数据失败:', error);
+          showMessage('数据导出失败', 'error');
+        }
+      });
+      
+      // 导入数据按钮点击事件
+      document.getElementById('import-data-button').addEventListener('click', function() {
+        if (confirm('导入数据将覆盖现有所有用户数据，确定要继续吗？')) {
+          document.getElementById('import-file-input').click();
+        }
+      });
+      
+      // 文件输入框change事件
+      document.getElementById('import-file-input').addEventListener('change', async function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+          showMessage('正在导入数据...', 'info');
+          
+          // 读取文件内容
+          const fileContent = await readFileAsText(file);
+          const importData = JSON.parse(fileContent);
+          
+          // 导入数据
+          const result = await userSystem.importUserData(importData);
+          
+          if (result.success) {
+            showMessage('数据导入成功，页面将刷新', 'success');
+            // 刷新页面以加载新数据
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          } else {
+            showMessage(result.message, 'error');
+          }
+        } catch (error) {
+          console.error('导入数据失败:', error);
+          showMessage('数据导入失败：' + error.message, 'error');
+        } finally {
+          // 清空文件输入框
+          event.target.value = '';
+        }
+      });
+    });
+    
+    /**
+     * 读取文件内容为文本
+     * @param {File} file 文件对象
+     * @returns {Promise<string>} 文件内容
+     */
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsText(file);
+      });
+    }
+    
+    /**
+     * 加载用户信息
+     */
+    async function loadUserInfo() {
+      try {
+        // 获取最新用户数据
+        const user = await userSystem.getUser(currentUser.username);
+        if (!user) {
+          showMessage('获取用户信息失败', 'error');
+          return;
+        }
+        
+        // 填充表单
+        document.getElementById('username').value = user.username;
+        document.getElementById('email').value = user.email || '';
+        
+        // 填充安全问题
+        const securityQuestionSelect = document.getElementById('security-question');
+        if (user.securityQuestion) {
+          securityQuestionSelect.value = user.securityQuestion;
+        } else {
+          securityQuestionSelect.value = '';
+        }
+        document.getElementById('security-answer').value = ''; // 不显示安全答案
+        
+        // 清空密码输入框
+        document.getElementById('current-password').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+        
+      } catch (error) {
+        console.error('加载用户信息失败:', error);
+        showMessage('加载用户信息失败', 'error');
+      }
+    }
+    
+    /**
+     * 保存用户信息
+     */
+    async function saveUserInfo() {
+      try {
+        // 获取表单数据
+        const email = document.getElementById('email').value.trim();
+        const currentPassword = document.getElementById('current-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const securityQuestion = document.getElementById('security-question').value;
+        const securityAnswer = document.getElementById('security-answer').value.trim();
+        
+        // 验证邮箱格式
+        if (email && !userSystem.isValidEmail(email)) {
+          showMessage('邮箱格式不正确', 'error');
+          return;
+        }
+        
+        // 验证密码
+        if (newPassword) {
+          if (!currentPassword) {
+            showMessage('请输入当前密码', 'error');
+            return;
+          }
+          
+          if (newPassword.length < 6) {
+            showMessage('新密码长度至少为6位', 'error');
+            return;
+          }
+          
+          if (newPassword !== confirmPassword) {
+            showMessage('两次输入的新密码不一致', 'error');
+            return;
+          }
+          
+          // 验证当前密码
+          const user = await userSystem.getUser(currentUser.username);
+          const hashedCurrentPassword = userSystem.hashPassword(currentPassword);
+          if (user.password !== hashedCurrentPassword) {
+            showMessage('当前密码不正确', 'error');
+            return;
+          }
+        }
+        
+        // 验证安全问题
+        if (securityQuestion && !securityAnswer) {
+          showMessage('请输入安全答案', 'error');
+          return;
+        }
+        
+        // 获取最新用户数据
+        const user = await userSystem.getUser(currentUser.username);
+        
+        // 更新用户数据
+        if (email) {
+          user.email = email;
+        }
+        
+        if (newPassword) {
+          user.password = userSystem.hashPassword(newPassword);
+        }
+        
+        if (securityQuestion && securityAnswer) {
+          user.securityQuestion = securityQuestion;
+          user.securityAnswer = userSystem.hashPassword(securityAnswer);
+        }
+        
+        // 保存用户数据
+        await userSystem.saveUser(user);
+        
+        // 更新当前用户对象
+        await userSystem.loadCurrentUserFromStorage();
+        currentUser = userSystem.getCurrentUser();
+        
+        // 显示成功消息
+        showMessage('个人信息更新成功', 'success');
+        
+        // 重新加载用户信息
+        await loadUserInfo();
+        
+      } catch (error) {
+        console.error('保存用户信息失败:', error);
+        showMessage('保存用户信息失败', 'error');
+      }
+    }
+    
+    /**
+     * 显示消息
+     * @param {string} message 消息内容
+     * @param {string} type 消息类型
+     */
+    function showMessage(message, type = 'info') {
+      const toast = document.getElementById('message-toast');
+      toast.textContent = message;
+      
+      // 设置不同类型的样式
+      toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 z-50';
+      
+      if (type === 'success') {
+        toast.classList.add('bg-green-600', 'text-white');
+      } else if (type === 'error') {
+        toast.classList.add('bg-red-600', 'text-white');
+      } else {
+        toast.classList.add('bg-gray-800', 'text-white');
+      }
+      
+      // 显示消息
+      toast.style.opacity = '1';
+      
+      // 3秒后隐藏
+      setTimeout(() => {
+        toast.style.opacity = '0';
+      }, 3000);
+    }
+  </script>
+  </div>
+</body>
+</html>
