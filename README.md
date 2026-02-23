@@ -38,7 +38,6 @@ chess-game/
 ├── profile.html              # User profile page
 ├── download.html             # Download page
 ├── support.html              # Support page
-├── README.md                 # Project documentation
 ├── chess.mp3                 # Background music
 ├── icon.jpg                  # Website icon
 ├── default.png               # Default image
